@@ -30,8 +30,57 @@
     <script src="js/renderers/CanvasRenderer.js"></script>
     <script src="js/libs/stats.min.js"></script>
     <script src="js/libs/tween.min.js"></script>
+          <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 
-  <script>
+ <script src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript">
+
+      // Values from the accelerometer
+      var x;
+      var y;
+      var z;
+      var pitch;
+      var roll;
+      var inclination;
+      var orientation;
+      var acceleration;
+
+      // Mapped values from accelerometer
+      var posX;
+      var posY;
+
+      // Screen values for better mapping
+      var limitX = window.innerWidth;
+      var limitY = window.innerHeight;
+      var widthCenter = window.innerWidth/2;
+      var heightCenter = window.innerHeight/2;
+      
+      // Other variables
+      var follower; // css tag
+      var socket; // Comomunication with the server
+      
+      // Start server
+      socket = io('http://localhost:8000');
+      socket.on('jedy', function (data) {
+          
+          // Get values from the accelerometer
+          x = (data.x);// * 100) + widthCenter;
+          y = data.y;// * 100;
+          z = data.z;
+          pitch = data.pitch;
+          roll = data.roll;
+          inclination = data.inclination;
+          orientation = data.orientation;
+          acceleration = data.acceleration;
+          
+          // Set limitation for the movement of the lightsabes
+        posX = Math.min(x, limitX);
+        posY = Math.min(y, limitY);
+        console.log(posX);
+      });
+
+       posX = Math.min(x, limitX);
+       posY = Math.min(y, limitY);
     var camera, scene, renderer;
     var raycaster, intersects, INTERSECTED;
     var effect, controls;
@@ -284,6 +333,7 @@
       
       // lightSaber
       var geometry = new THREE.BoxGeometry( 1,15,1 );
+       geometry.translate( 0, 7.5, 0 );
       var material = new THREE.MeshBasicMaterial( {color: 'blue'} );
       lightSaber = new THREE.Mesh( geometry, material );
       lightSaber.position.set(10,10,0);
@@ -331,10 +381,12 @@
           simulator();   
       }
       if(simulating){
-        //   fire();
+           fire();
           
       }
-      
+        lightSaber.rotation.y = x;
+        lightSaber.rotation.x = pitch/100 * -1;
+        lightSaber.rotation.z = roll/20;
       
     }
 
