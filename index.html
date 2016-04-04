@@ -481,16 +481,26 @@
         floorMesh.position.x -= .1;
         
         scene.add(stMesh);
+        var intersectSTArmy =[];
+        var collisionsST = [];
         intersectLightSaber = new THREE.Box3().setFromObject(lightSaber);
 
         intersectLaser = new THREE.Box3().setFromObject(laser);
+
+        for(var index = 0; index < 10; index++) {
+          intersectSTArmy[index] = new THREE.Box3().setFromObject(stArmy[index]);
+        }
+
+        for(var index = 0; index < 10; index++) {
+          collisionsST[index] = intersectSTArmy[index].intersectsBox(intersectLightSaber);
+        }
 
         var collision = intersectLightSaber.intersectsBox(intersectLaser);
         
         if(collision) {
           col = true;
         }
-
+        stArmy[2].position.z = 1;
         if(col) {
             laser.position.x+=.3;
           laser2.position.x-=.3;
@@ -513,6 +523,12 @@
         for(var a = 0 ; a<10;a++){
             // console.log(stArmy[a].position.x);
             stArmy[a].position.x -=.3;
+        }
+
+        for(var de = 0; de < 10; de++) {
+          if (collisionsST[de]){
+            console.log("TEST");
+          }
         }
         scene.add( laser );
         stMesh.position.x-=.1;
