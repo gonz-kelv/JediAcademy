@@ -86,7 +86,15 @@
     var effect, controls;
     var element, container;
     var floorMesh;
-   
+    var listener;
+   var audioContext = new AudioContext(),
+  src, 
+  source,
+  fft,
+  buffer,
+  data = new Uint8Array(),
+  boost = 0,
+  samples = 512;
     var lightSaber, lsMaterial, lsMesh;   
     var boxButton, bButtons = [];
     
@@ -113,6 +121,9 @@
       camera.position.set(0, 20, 0);
       scene.add(camera);
 
+ listener = new THREE.AudioListener();
+        camera.add( listener );
+
       controls = new THREE.OrbitControls(camera, element);
       controls.rotateUp(Math.PI/36);
       controls.target.set(
@@ -122,7 +133,12 @@
       );
       controls.noZoom = true;
       controls.noPan = true;
-      
+        var sound3 = new THREE.PositionalAudio( listener );
+        sound3.load( 'audio/battle.mp3' );
+        sound3.setRefDistance( 20 );
+        sound3.setVolume(1);
+        sound3.autoplay = true;
+        scene.add( sound3 );
 
     var radius   = 10,
     segments = 64,
@@ -337,7 +353,53 @@
       lightSaber = new THREE.Mesh( geometry, material );
       lightSaber.position.set(10,10,0);
       scene.add(lightSaber);
-        
+      
+        var sound1 = new THREE.PositionalAudio( listener );
+        sound1.load( 'audio/lightsaber.mp3' );
+        sound1.setRefDistance( 20 );
+        sound1.setVolume(5);
+        sound1.autoplay = true;
+        sound1.setLoop(true);
+        lightSaber.add( sound1 );
+
+  //         // Loads the music
+  // var req = new XMLHttpRequest();
+  // req.open("GET", 'audio/lightsaber.mp3', true);
+  // // The data will be loaded as an array buffer
+  // req.responseType = "arraybuffer";
+  // req.onload = function() 
+  // {
+  //   // Use the audioContext object to decode the response as audio
+  //   audioContext.decodeAudioData(req.response, function(buffer)
+  //   {
+
+  //     // Create a source node from the buffer
+  //     source = audioContext.createScriptProcessor(2048, 1, 1);
+  //     source.buffer = buffer;
+
+  //     src = audioContext.createBufferSource();
+  //     src.buffer = buffer;
+      
+
+  //     // Create fft
+  //     fft = audioContext.createAnalyser();
+  //     fft.smoothingTimeConstant = .5;
+  //     fft.fftSize = samples;
+      
+
+  //     // Coonect them up into a chain
+  //     src.connect(fft);
+  //     fft.connect(audioContext.destination);
+  //     source.connect(audioContext.destination);
+
+  //     // Start src
+  //     src.start();
+
+      
+  //   });
+  // };
+  // req.send();
+
       window.addEventListener('resize', resize, false);
       setTimeout(resize, 1);
       
@@ -383,9 +445,23 @@
         //   fire();
           
       }
-        lightSaber.rotation.y = x;
-        lightSaber.rotation.x = pitch/100 * -1;
-        lightSaber.rotation.z = roll/20;
+             var fXg = 0, fYg = 0, fZg = 0, Xg, Yg, Zg;
+       var alpha = .5;
+ 
+    //Low Pass Filter
+    fXg = x * alpha + (fXg * (1.0 - alpha));
+    fYg = y * alpha + (fYg * (1.0 - alpha));
+    fZg = z * alpha + (fZg * (1.0 - alpha));
+  
+    //Roll & Pitch Equations
+    // roll  = (Math.atan2(-fYg, fZg)*180.0)/Math.PI;
+    // pitch = (Math.atan2(fXg, Math.sqrt(fYg*fYg + fZg*fZg))*180.0)/Math.PI;
+      //x *= -1;
+
+        console.log(pitch + " " + roll);
+        lightSaber.rotation.y = 0;
+        lightSaber.rotation.x = x; //((pitch/90) * -1);
+        lightSaber.rotation.z = (roll/100);
       
     }
 
@@ -499,8 +575,13 @@
         
         if(collision) {
           col = true;
+          var sound2 = new THREE.PositionalAudio( listener );
+        sound2.load( 'audio/deflect.mp3' );
+        sound2.setRefDistance( 20 );
+        sound2.setVolume(2);
+        sound2.autoplay = true;
+        lightSaber.add( sound2 );
         }
-        stArmy[2].position.z = 1;
         if(col) {
             laser.position.x+=.3;
           laser2.position.x-=.3;
@@ -545,7 +626,12 @@
           console.log(laser.position.x);
            
     }
+
+
+
     
   </script>
   </body>
 </html>
+
+
