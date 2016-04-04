@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>IAT320 Jedi Academy Simulator</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+      body {
+        margin: 0px;
+        overflow: hidden;
+      }
+      #JediSimulator {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="JediSimulator"></div>
+
+  <script src="js/third-party/threejs/three.js"></script>
+  <script src="js/third-party/threejs/StereoEffect.js"></script>
+  <script src="js/third-party/threejs/DeviceOrientationControls.js"></script>
+  <script src="js/third-party/threejs/OrbitControls.js"></script>
+  <script src="js/third-party/threejs/Raycaster.js"></script>
+    <script src="js/renderers/Projector.js"></script>
+    <script src="js/renderers/CanvasRenderer.js"></script>
+    <script src="js/libs/stats.min.js"></script>
+    <script src="js/libs/tween.min.js"></script>
+
+  <script>
+    var camera, scene, renderer;
+    var raycaster, intersects, INTERSECTED;
+    var effect, controls;
+    var element, container;
+    var floorMesh;
+   
+    var lightSaber, lsMaterial, lsMesh;   
+    var boxButton, bButtons = [];
+    
+    var stArmy = [], stormTrooper, stMaterial, stMesh, laser,stPosX, stPosY, stPosZ;
+
+    var clock = new THREE.Clock();
+    
+    var rSwing = false, highlighted = false, simulate = false, simulating = false;
+
+    init();
+    animate();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer();
+      element = renderer.domElement;
+      container = document.getElementById('JediSimulator');
+      container.appendChild(element);
+
+      effect = new THREE.StereoEffect(renderer); // This makes two sreens of the renderer
+
+      scene = new THREE.Scene();
+
+      camera = new THREE.PerspectiveCamera(90, 1, 0.001, 700);
+      camera.position.set(0, 20, 0);
+      scene.add(camera);
+
+      controls = new THREE.OrbitControls(camera, element);
+      controls.rotateUp(Math.PI / 4);
+      controls.target.set(
+        camera.position.x + 0.1,
+        camera.position.y,
+        camera.position.z
+      );
+      controls.noZoom = true;
+      controls.noPan = true;
+      
+
+    var radius   = 10,
+    segments = 64,
+    material = new THREE.LineBasicMaterial( { color: 0x0000ff } ),
+    geometry = new THREE.CircleGeometry( radius, segments );
+
+
+    // create a box button
+   var geometryBox = new THREE.BoxGeometry( 5, 5, 15 );
+   var materialBox = new THREE.MeshBasicMaterial( {color:'red'} );
+	    
+        boxButton = new THREE.Mesh( geometryBox, materialBox );
+        boxButton.position.set(30,20,0);
+        boxButton.name = 'StartButton';
+        
+        scene.add(boxButton);
+        bButtons.push(boxButton);
+
+
+      function setOrientationControls(e) {
+        if (!e.alpha) {
+          return;
+        }
+
+        controls = new THREE.DeviceOrientationControls(camera, true);
+        controls.connect();
+        controls.update();
+
+        element.addEventListener('click', fullscreen, false);
+
+        window.removeEventListener('deviceorientation', setOrientationControls, true);
+      }
+      window.addEventListener('deviceorientation', setOrientationControls, true);
+
+      var light = new THREE.HemisphereLight(0x777777, 0x000000, 0.6);
+      scene.add(light);
+
+      var texture = THREE.ImageUtils.loadTexture(
+        'img/spaceshiptexture1.png'
+      );
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.anisotropy = renderer.getMaxAnisotropy();
+
+      var material = new THREE.MeshPhongMaterial({
+        color: 0xffffff,
+        specular: 0xffffff,
+        shininess: 20,
+        map: texture
+      });
+
+      var geometry = new THREE.PlaneGeometry(2000, 2000);
+
+      floorMesh = new THREE.Mesh(geometry, material);
+      floorMesh.rotation.x = -Math.PI / 2;
+      floorMesh.name = 'Floor';
+      scene.add(floorMesh);
+      
+      // Storm Trooper
+      var stGeometry = new THREE.PlaneGeometry(30,50);
+      
+      // Textures
+      var stTexture = new THREE.TextureLoader().load('img/Stormtrooper_withgun2.png');
+      var stTexture2 = new THREE.TextureLoader().load('img/Stormtrooper_notaiming2.png');
+      
+      var stMaterial = new THREE.MeshPhongMaterial({
+        map: stTexture2,
+        transparent: true
+      });
+      
+      
+    //   for(var k=0; k<2;k++){
+      
+      stMesh = new THREE.Mesh(stGeometry, stMaterial);
+      stMesh.rotation.y = 180;
+      stMesh.position.set(50,20,30);
+      // scene.add(stMesh);
+    //   }
+      // create lasers
+      var geometry = new THREE.BoxGeometry( 6,1,1 );
+      var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+      laser = new THREE.Mesh( geometry, material );
+      laser.rotation.y = -Math.PI/6;
+      laser.rotation.x = -Math.PI/4;
+      laser.position.set(45,35,25);
+      
+      // lightSaber
+      var geometry = new THREE.BoxGeometry( 1,15,1 );
+      var material = new THREE.MeshBasicMaterial( {color: 'blue'} );
+      lightSaber = new THREE.Mesh( geometry, material );
+      lightSaber.position.set(10,10,0);
+      scene.add(lightSaber);
+        
+      window.addEventListener('resize', resize, false);
+      setTimeout(resize, 1);
+      
+      // add mouse events. Should I have a mouse up event?
+      window.addEventListener('mousedown',onDocumentMouseDown, false);    
+      
+    }
+
+    function resize() {
+      var width = container.offsetWidth;
+      var height = container.offsetHeight;
+
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+
+      renderer.setSize(width, height);
+      effect.setSize(width, height);
+      
+      
+    }
+
+    function update(dt) {
+      resize();
+
+      camera.updateProjectionMatrix();
+      
+      controls.update(dt);
+      
+      // Do lightSaber rotation here
+    //   lightSaber.rotation.x +=1;
+      
+      if(highlighted == true && rSwing == true){
+          console.log('uhuh');
+          scene.remove(boxButton);
+          simulate = true; 
+        }
+        
+      // Initiate the simulation
+      if(simulate){
+          simulator();   
+      }
+      if(simulating){
+          fire();
+           
+            
+            
+            
+        }
+      
+      
+    }
+
+    function render(dt) {
+      effect.render(scene, camera);
+      
+      raycaster = new THREE.Raycaster();
+      raycaster.set(camera.getWorldPosition(), camera.getWorldDirection() );
+    
+      intersects = raycaster.intersectObjects( bButtons );
+      
+      if ( intersects.length > 0 ) {
+          if ( INTERSECTED != intersects[ 0 ].object ) {
+              // if intersect then green
+              boxButton.material.color.setHex( '0x00ff00' );
+              highlighted = true;
+						if ( INTERSECTED ) {
+                            console.log(intersects[0].object.name);
+                            
+                        }
+					}
+				} else {
+                    // if not intersect then change to original color
+                    boxButton.material.color.setHex( '0xff0000' );
+                    highlighted = false;
+					if ( INTERSECTED ) 
+					INTERSECTED = null;
+
+                }
+    
+                
+
+    }
+    
+  
+
+    function animate(t) {
+      requestAnimationFrame(animate);
+
+      update(clock.getDelta());
+      render(clock.getDelta());
+    }
+
+    function fullscreen() {
+      if (container.requestFullscreen) {
+        container.requestFullscreen();
+      } else if (container.msRequestFullscreen) {
+        container.msRequestFullscreen();
+      } else if (container.mozRequestFullScreen) {
+        container.mozRequestFullScreen();
+      } else if (container.webkitRequestFullscreen) {
+        container.webkitRequestFullscreen();
+      }
+    }
+    
+    // Returns a random integer between min (included) and max (excluded)
+    // Using Math.round() will give you a non-uniform distribution!
+    function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min)) + min;
+    }
+    
+    function onDocumentMouseDown(event) 
+    {
+        
+        mouseDown = true;
+        event.preventDefault();
+        
+        switch ( event.button ) {
+        case 0: // left 
+            console.log('huh1');
+            break;
+        case 1: // middle
+            console.log('what');
+            break;
+        case 2: // right
+            console.log('huh');
+            // lightSaber
+            lightSaber.rotation.x +=1;
+            rSwing = true;
+            break;
+        }
+       
+    }
+    
+    function simulator() {
+        /* This is the simlation
+            - Remove the boxButton
+            - Timer for 2mins
+            - Move the plane 
+            - Create storm troopers
+            - track results        
+        */
+        
+        floorMesh.position.x -= .1;
+        
+        scene.add(stMesh);
+        
+        
+        scene.add( laser );
+        stMesh.position.x-=.1;
+        // This will update objects that are created during in the simulation
+        simulating = true;
+        
+    }
+    
+    function fire(){
+       
+          laser.position.z-=.25;
+          laser.position.x-=.5;
+          laser.position.y-=.2;
+          console.log(laser.position.x);
+           
+            
+            
+            
+        
+    }
+    
+  </script>
+  </body>
+</html>
