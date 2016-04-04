@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+<!-- edit -->
   <head>
     <title>IAT320 Jedi Academy Simulator</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -108,7 +109,7 @@
       }
       window.addEventListener('deviceorientation', setOrientationControls, true);
 
-      var light = new THREE.HemisphereLight(0x777777, 0x000000, 0.6);
+      var light = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
       scene.add(light);
 
       var texture = THREE.ImageUtils.loadTexture(
@@ -125,6 +126,7 @@
         map: texture
       });
 
+     
       var geometry = new THREE.PlaneGeometry(2000, 2000);
 
       floorMesh = new THREE.Mesh(geometry, material);
@@ -154,17 +156,50 @@
     //   }
       // create lasers
       var geometry = new THREE.BoxGeometry( 6,1,1 );
-      var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+      material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
       laser = new THREE.Mesh( geometry, material );
       laser.rotation.y = -Math.PI/6;
       laser.rotation.x = -Math.PI/4;
       laser.position.set(45,35,25);
       
+      // var lsTexture = new THREE.TextureLoader().load('img/Stormtrooper_withgun2.png');
+
+      var lsLight = new THREE.DirectionalLight( 0xaa0000, 0.1 );
+      // lsLight.position.set( 0, 0.1,0 );
+      lsLight.position.set( 0, 1, 0 );
+
+
+      // scene.add(lsLight);
+
+      var lsMaterial = new THREE.MeshPhongMaterial({
+        color: 0xff0000,
+        specular: 0xff0000,
+        shininess: 100
+        // map: lsTexture
+      });
+
+      var glowMaterial = new THREE.MeshLambertMaterial({
+        color: 0xff0000,
+        specular: 0xff0000,
+        shininess: 10,
+        transparent: true,
+        opacity: 0.1
+        // map: lsTexture
+      });
+
+      var glowMaterial2 = new THREE.MeshLambertMaterial({
+        color: 0xff0000,
+        specular: 0xff0000,
+        shininess: 10,
+        transparent: true,
+        opacity: 0.3
+        // map: lsTexture
+      });
       // lightSaber
-      var geometry = new THREE.BoxGeometry( 1,15,1 );
-      var material = new THREE.MeshBasicMaterial( {color: 'blue'} );
-      lightSaber = new THREE.Mesh( geometry, material );
-      lightSaber.position.set(10,10,0);
+      var geometry = new THREE.CylinderGeometry( 0.5, 0.5, 15, 15 );
+      // var lsMaterial = new THREE.MeshBasicMaterial( {color: 'blue'} );
+      lightSaber = new THREE.Mesh( geometry, lsMaterial );
+      lightSaber.position.set(10,15,0);
       scene.add(lightSaber);
         
       window.addEventListener('resize', resize, false);
@@ -172,8 +207,36 @@
       
       // add mouse events. Should I have a mouse up event?
       window.addEventListener('mousedown',onDocumentMouseDown, false);    
+    
       
+
+      // lightSaber Glow Middle
+      var glowGeometry2 = new THREE.CylinderGeometry( 1, 1, 15, 15 );
+      // var lsMaterial = new THREE.MeshBasicMaterial( {color: 'blue'} );
+      glowLightSaber2 = new THREE.Mesh( glowGeometry2, glowMaterial2 );
+      glowLightSaber2.position.set(10,15,0);
+      scene.add(glowLightSaber2);
+        
+      window.addEventListener('resize', resize, false);
+      setTimeout(resize, 1);
+      
+      // add mouse events. Should I have a mouse up event?
+      window.addEventListener('mousedown',onDocumentMouseDown, false);  
+
+      // lightSaber Shadow
+      var glowGeometry = new THREE.CylinderGeometry( 1.5, 1.5, 15, 15 );
+      // var lsMaterial = new THREE.MeshBasicMaterial( {color: 'blue'} );
+      glowLightSaber = new THREE.Mesh( glowGeometry, glowMaterial );
+      glowLightSaber.position.set(10,15,0);
+      scene.add(glowLightSaber);
+        
+      window.addEventListener('resize', resize, false);
+      setTimeout(resize, 1);
+      
+      // add mouse events. Should I have a mouse up event?
+      window.addEventListener('mousedown',onDocumentMouseDown, false);  
     }
+
 
     function resize() {
       var width = container.offsetWidth;
