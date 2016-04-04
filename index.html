@@ -58,7 +58,7 @@
       // Other variables
       var follower; // css tag
       var socket; // Comomunication with the server
-      
+      var col = false;
       // Start server
       socket = io('http://localhost:8000');
       socket.on('jedy', function (data) {
@@ -76,7 +76,7 @@
           // Set limitation for the movement of the lightsabes
         posX = Math.min(x, limitX);
         posY = Math.min(y, limitY);
-        console.log(posX);
+        //console.log(posX);
       });
 
        posX = Math.min(x, limitX);
@@ -330,7 +330,6 @@
       laser2.position.set(350,35,25);
       scene.add(laser2);
       
-      
       // lightSaber
       var geometry = new THREE.BoxGeometry( 1,15,1 );
        geometry.translate( 0, 7.5, 0 );
@@ -371,7 +370,7 @@
     //   lightSaber.rotation.x +=1;
       
       if(highlighted == true && rSwing == true){
-          console.log('uhuh');
+          //console.log('uhuh');
           scene.remove(boxButton);
           simulate = true; 
         }
@@ -381,7 +380,7 @@
           simulator();   
       }
       if(simulating){
-           fire();
+        //   fire();
           
       }
         lightSaber.rotation.y = x;
@@ -482,9 +481,34 @@
         floorMesh.position.x -= .1;
         
         scene.add(stMesh);
-        laser.position.x-=.3;
-        laser2.position.x-=.3;
+        intersectLightSaber = new THREE.Box3().setFromObject(lightSaber);
+
+        intersectLaser = new THREE.Box3().setFromObject(laser);
+
+        var collision = intersectLightSaber.intersectsBox(intersectLaser);
         
+        if(collision) {
+          col = true;
+        }
+
+        if(col) {
+            laser.position.x+=.3;
+          laser2.position.x-=.3;
+          if(stArmy[2].position.x <=100){
+            laser.position.z-=.20;
+            laser.position.x+=.5;
+            laser.position.y+=.2;
+          }
+        } else {
+          console.log(col);
+          laser.position.x-=.3;
+          laser2.position.x-=.3;
+          if(stArmy[2].position.x <=100){
+            laser.position.z-=.20;
+            laser.position.x-=.5;
+            laser.position.y-=.1;
+          } 
+        }
         
         for(var a = 0 ; a<10;a++){
             // console.log(stArmy[a].position.x);
