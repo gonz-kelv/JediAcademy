@@ -22,7 +22,7 @@
     <div id="JediSimulator"></div>
 
   <script src="js/third-party/threejs/three.js"></script>
-  <script src="js/third-party/threejs/StereoEffect.js"></script>
+  <!--<script src="js/third-party/threejs/StereoEffect.js"></script>-->
   <script src="js/third-party/threejs/DeviceOrientationControls.js"></script>
   <script src="js/third-party/threejs/OrbitControls.js"></script>
   <script src="js/third-party/threejs/Raycaster.js"></script>
@@ -41,7 +41,7 @@
     var lightSaber, lsMaterial, lsMesh;   
     var boxButton, bButtons = [];
     
-    var stArmy = [], stormTrooper, stMaterial, stMesh, laser,stPosX, stPosY, stPosZ;
+    var stArmy = [], stormTrooper, stMaterial, stMesh, laser,stPosX = 50, stPosY, stPosZ;
 
     var clock = new THREE.Clock();
     
@@ -56,7 +56,7 @@
       container = document.getElementById('JediSimulator');
       container.appendChild(element);
 
-      effect = new THREE.StereoEffect(renderer); // This makes two sreens of the renderer
+    //   effect = new THREE.StereoEffect(renderer); // This makes two sreens of the renderer
 
       scene = new THREE.Scene();
 
@@ -65,9 +65,9 @@
       scene.add(camera);
 
       controls = new THREE.OrbitControls(camera, element);
-      controls.rotateUp(Math.PI / 4);
+      controls.rotateUp(Math.PI/36);
       controls.target.set(
-        camera.position.x + 0.1,
+        camera.position.x + 1,
         camera.position.y,
         camera.position.z
       );
@@ -108,7 +108,7 @@
       }
       window.addEventListener('deviceorientation', setOrientationControls, true);
 
-      var light = new THREE.HemisphereLight(0x777777, 0x000000, 0.6);
+      var light = new THREE.HemisphereLight(0xffffbb, 0x080820, 1 );
       scene.add(light);
 
       var texture = THREE.ImageUtils.loadTexture(
@@ -125,7 +125,7 @@
         map: texture
       });
 
-      var geometry = new THREE.PlaneGeometry(2000, 2000);
+      var geometry = new THREE.PlaneGeometry(3000, 2000);
 
       floorMesh = new THREE.Mesh(geometry, material);
       floorMesh.rotation.x = -Math.PI / 2;
@@ -138,27 +138,149 @@
       // Textures
       var stTexture = new THREE.TextureLoader().load('img/Stormtrooper_withgun2.png');
       var stTexture2 = new THREE.TextureLoader().load('img/Stormtrooper_notaiming2.png');
+      var stTexture3 = new THREE.TextureLoader().load('img/Stormtrooper_notaiming1100x39.png');
+      
+      // Randomly assign materials with this array
+      var stMaterialArray = [];
       
       var stMaterial = new THREE.MeshPhongMaterial({
+        map: stTexture,
+        transparent: true
+      });
+      stMaterialArray.push(stMaterial);
+      
+      var stMaterial2 = new THREE.MeshPhongMaterial({
         map: stTexture2,
         transparent: true
       });
+      stMaterialArray.push(stMaterial2);
+      
+      var stMaterial3 = new THREE.MeshPhongMaterial({
+        map: stTexture3,
+        transparent: true
+      });
+      stMaterialArray.push(stMaterial3);
+      
+      var counter1=1, counter2=1, counter3=1;
+      
+      for(var k=0; k<10;k++){
+        
+          if(k==0 || k==5){
+              if(counter1==2){
+                  stMesh = new THREE.Mesh(stGeometry, stMaterial3);
+                  stMesh.rotation.y = -120;
+                  stMesh.position.set(300,20,-30);
+                  scene.add(stMesh);
+                    stArmy.push(stMesh);
+              }
+              stMesh = new THREE.Mesh(stGeometry, stMaterial3);
+              stMesh.rotation.y = 180;
+              stMesh.position.set(50,20,30);
+              scene.add(stMesh);
+                    stArmy.push(stMesh);
+              counter1++;
+              
+          }
+          else if(k== 1 || k == 3 || k== 4||k ==8){
+              
+              
+              if(counter2==2){
+                  stMesh = new THREE.Mesh(stGeometry, stMaterial2);
+                    stMesh.rotation.y = -120;
+                    stMesh.position.set(150,20,-30);
+                    scene.add(stMesh);
+                    stArmy.push(stMesh);
+                    counter2++;
+              }
+              else if(counter2==3){
+                   stMesh = new THREE.Mesh(stGeometry, stMaterial2);
+                    stMesh.rotation.y = 180;
+                    stMesh.position.set(200,20,30);
+                    scene.add(stMesh);
+                    stArmy.push(stMesh);
+                    counter2++;
+              }
+              else if(counter2==4){
+                   stMesh = new THREE.Mesh(stGeometry, stMaterial2);
+                    stMesh.rotation.y = 180;
+                    stMesh.position.set(450,20,30);
+                    scene.add(stMesh);
+                    stArmy.push(stMesh);
+                    counter2++;
+              }
+              else{
+                stMesh = new THREE.Mesh(stGeometry, stMaterial2);
+                stMesh.rotation.y = -120;
+                stMesh.position.set(100,20,-30);
+                scene.add(stMesh);
+                    stArmy.push(stMesh);
+                counter2++;
+              }
+              
+              
+              
+              
+              
+          }
+          else{
+
+              if(counter3==2){
+                stMesh = new THREE.Mesh(stGeometry, stMaterial);
+                stMesh.rotation.y = 180;
+                stMesh.position.set(350,20,30);
+                scene.add(stMesh);
+                
+                    stArmy.push(stMesh);
+                console.log('huh1');
+                counter3++;
+              }
+              else if(counter3==3){
+                stMesh = new THREE.Mesh(stGeometry, stMaterial);
+                stMesh.rotation.y = -120;
+                stMesh.position.set(400,20,-30);
+                scene.add(stMesh);
+                
+                    stArmy.push(stMesh);
+                console.log('huh2');
+                counter3++;
+              }
+              else if(counter3==4){
+                stMesh = new THREE.Mesh(stGeometry, stMaterial);
+                stMesh.rotation.y = -120;
+                stMesh.position.set(500,20,-30);
+                scene.add(stMesh);
+                
+                    stArmy.push(stMesh);
+                console.log('huh3');
+                counter3++;
+              }
+              else{
+                stMesh = new THREE.Mesh(stGeometry, stMaterial);
+                stMesh.rotation.y = 180;
+                stMesh.position.set(150,20,30);
+                scene.add(stMesh);
+                    stArmy.push(stMesh);
+                console.log('huh');
+                counter3++;
+              }
+              
+          }
       
       
-    //   for(var k=0; k<2;k++){
-      
-      stMesh = new THREE.Mesh(stGeometry, stMaterial);
-      stMesh.rotation.y = 180;
-      stMesh.position.set(50,20,30);
-      // scene.add(stMesh);
-    //   }
+      }
+               
       // create lasers
       var geometry = new THREE.BoxGeometry( 6,1,1 );
       var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
       laser = new THREE.Mesh( geometry, material );
       laser.rotation.y = -Math.PI/6;
       laser.rotation.x = -Math.PI/4;
-      laser.position.set(45,35,25);
+      laser.position.set(150,35,25);
+      scene.add(laser);
+      laser2 = new THREE.Mesh( geometry, material );
+      laser2.position.set(350,35,25);
+      scene.add(laser2);
+      
       
       // lightSaber
       var geometry = new THREE.BoxGeometry( 1,15,1 );
@@ -183,7 +305,7 @@
       camera.updateProjectionMatrix();
 
       renderer.setSize(width, height);
-      effect.setSize(width, height);
+    //   effect.setSize(width, height);
       
       
     }
@@ -209,19 +331,15 @@
           simulator();   
       }
       if(simulating){
-          fire();
-           
-            
-            
-            
-        }
+        //   fire();
+          
+      }
       
       
     }
 
     function render(dt) {
-      effect.render(scene, camera);
-      
+      renderer.render(scene, camera);
       raycaster = new THREE.Raycaster();
       raycaster.set(camera.getWorldPosition(), camera.getWorldDirection() );
     
@@ -293,7 +411,7 @@
         case 2: // right
             console.log('huh');
             // lightSaber
-            lightSaber.rotation.x +=1;
+            // lightSaber.rotation.x +=1;
             rSwing = true;
             break;
         }
@@ -312,8 +430,14 @@
         floorMesh.position.x -= .1;
         
         scene.add(stMesh);
+        laser.position.x-=.3;
+        laser2.position.x-=.3;
         
         
+        for(var a = 0 ; a<10;a++){
+            // console.log(stArmy[a].position.x);
+            stArmy[a].position.x -=.3;
+        }
         scene.add( laser );
         stMesh.position.x-=.1;
         // This will update objects that are created during in the simulation
@@ -328,10 +452,6 @@
           laser.position.y-=.2;
           console.log(laser.position.x);
            
-            
-            
-            
-        
     }
     
   </script>
