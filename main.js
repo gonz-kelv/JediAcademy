@@ -23,6 +23,10 @@ var board = new five.Board(); // Connect to arduino board
 // Sensors
 var accelerometer;
 var force_sensor;
+var motor;
+var motor_2;
+var motor_3;
+
 // Outputs
 var acc_output;
 
@@ -57,11 +61,53 @@ io.sockets.on('connection', function (socket) {
                      }
 
             // Debug
-             console.log(acc_output); 
+            // console.log(acc_output); 
             // console.log("Sending...");    
             socket.emit('jedy', acc_output); // Send information to client
         });
 
+
+var motor = new five.Motor(12);
+// var motor_2 = new five.Motor(10);
+// var motor_3 = new five.Motor(9);
+  // Reverse the motor at maximum speed
+  motor.reverse(255);
+  // motor_2.reverse(255);
+  // motor_3.reverse(255);
+
+        // Inject the `motor` hardware into
+        // the Repl instance's context;
+        // allows direct command line access
+        // board.repl.inject({
+        //     motor: motor
+        // });
+
+        // board.repl.inject({
+        //     motor: motor_2
+        // });
+
+      // Motor Event API
+
+      // // "start" events fire when the motor is started.
+      // motor.on("start", function() {
+      //   console.log("start", Date.now());
+
+
+      // });
+
+      // // "stop" events fire when the motor is stopped.
+      // motor.on("stop", function() {
+      //   console.log("stop", Date.now());
+      // });
+
+      // Motor API
+
+      // start([speed)
+      // Start the motor. `isOn` property set to |true|
+      // Takes an optional parameter `speed` [0-255]
+      // to define the motor speed if a PWM Pin is
+      // used to connect the motor.
+      //motor.start();
         // Scale the sensor's value to the LED's brightness range
         force_sensor.scale([0, 255]).on("data", function() {
             // Debug
