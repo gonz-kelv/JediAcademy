@@ -80,7 +80,7 @@
 
        posX = Math.min(x, limitX);
        posY = Math.min(y, limitY);
-    
+    var playingEnding = true;
     var camera, scene, renderer;
     var raycaster, intersects, INTERSECTED;
     var effect, controls;
@@ -101,7 +101,7 @@
    
    // evaluation
    var lightPoints, darkPoints;
-   
+    var sound1;
     var lightSaber, lsMaterial, lsMesh;   
     var boxButton, bButtons = [];
     
@@ -369,7 +369,7 @@
       glowLightSaber2.position.set(10,15,0);
       scene.add(glowLightSaber2);
       
-       var sound1 = new THREE.PositionalAudio( listener );
+      sound1 = new THREE.PositionalAudio( listener );
         sound1.load( 'audio/lightsaber.mp3' );
         sound1.setRefDistance( 20 );
         sound1.setVolume(5);
@@ -681,38 +681,76 @@
     
     function endSimulate(){
       sound3.stop();
+      sound1.stop();
       var sound4 = new THREE.PositionalAudio( listener );
+      var sound5 = new THREE.PositionalAudio( listener );
       if(deflects_counter <= 2 && kills_counter <= 4) {
-        sound4.load( 'audio/padawan.m4a' );
-        sound4.setRefDistance( 20 );
-        sound4.setVolume(5);
-        sound4.autoplay = true;
-        scene.add( sound4 );
+        if(playingEnding) {
+          sound5.load( 'audio/jedi.mp3' );
+          sound5.setRefDistance( 20 );
+          sound5.setVolume(1);
+          sound5.autoplay = true;
+          scene.add( sound5 );
+
+          sound4.load( 'audio/padawan.mp3' );
+          sound4.setRefDistance( 20 );
+          sound4.setVolume(5);
+          sound4.autoplay = true;
+          scene.add( sound4 );
+          
+          playingEnding = false;
+        }
         scene.add(Yoda);
 
       } else if(deflects_counter >= 3 && kills_counter <= 4) {
-        sound4.load( 'audio/padawan.mp3' );
-        sound4.setRefDistance( 20 );
-        sound4.setVolume(2);
-        sound4.autoplay = true;
-        scene.add( sound4 );
+        if(playingEnding) {
+          sound5.load( 'audio/jedi.mp3' );
+          sound5.setRefDistance( 20 );
+          sound5.setVolume(1);
+          sound5.autoplay = true;
+          scene.add( sound5 );
+
+          sound4.load( 'audio/jedi_master.mp3' );
+          sound4.setRefDistance( 20 );
+          sound4.setVolume(5);
+          sound4.autoplay = true;
+          scene.add( sound4 );
+          playingEnding = false;
+        }
         scene.add( Yoda );
 
      } else if(deflects_counter <= 2 && kills_counter >= 5) {
-        sound4.load( 'audio/sith_apprentice.mp3' );
-        sound4.setRefDistance( 20 );
-        sound4.setVolume(5);
-        sound4.autoplay = true;
-        scene.add( sound4 );
+        if(playingEnding) {
+          sound5.load( 'audio/sith.mp3' );
+          sound5.setRefDistance( 20 );
+          sound5.setVolume(1);
+          sound5.autoplay = true;
+          scene.add( sound5 );
+
+          sound4.load( 'audio/sith_apprentice.mp3' );
+          sound4.setRefDistance( 20 );
+          sound4.setVolume(5);
+          sound4.autoplay = true;
+          scene.add( sound4 );
+          playingEnding = false;
+        }
         scene.add(DarthVader);
 
      } else if(deflects_counter >= 3 && kills_counter >= 5) {
-        sound4.load( 'audio/sith_lord.mp3' );
-        sound4.setRefDistance( 20 );
-        sound4.setVolume(5);
-        sound4.autoplay = true;
-        scene.add( sound4 );
-        scene.add(DarthVader);
+        if(playingEnding) {
+          sound5.load( 'audio/sith.mp3' );
+          sound5.setRefDistance( 20 );
+          sound5.setVolume(1);
+          sound5.autoplay = true;
+          scene.add( sound5 );
+
+          sound4.load( 'audio/sith_lord.mp3' );
+          sound4.setRefDistance( 20 );
+          sound4.setVolume(5);
+          sound4.autoplay = true;
+          scene.add( sound4 );
+          playingEnding = false;
+        }
         scene.add(DarthVader);
      }
        
