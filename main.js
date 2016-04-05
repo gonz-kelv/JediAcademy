@@ -24,8 +24,6 @@ var board = new five.Board(); // Connect to arduino board
 var accelerometer;
 var force_sensor;
 var motor;
-var motor_2;
-var motor_3;
 
 // Outputs
 var acc_output;
@@ -40,6 +38,8 @@ board.on("ready", function() {
         pin: "A1",
         freq: 25
     });
+
+    motor = new five.Motor(10);
 });
 
 // Connect to server
@@ -66,12 +66,15 @@ io.sockets.on('connection', function (socket) {
             socket.emit('jedy', acc_output); // Send information to client
         });
 
+        socket.on('deflect', function (data) {
+            if(data == true) {
+                motor.reverse(255);  
+            } 
+            board.wait(1000, function() {
+                motor.stop();
+            });
+        });
 
-var motor = new five.Motor(12);
-// var motor_2 = new five.Motor(10);
-// var motor_3 = new five.Motor(9);
-  // Reverse the motor at maximum speed
-  motor.reverse(255);
   // motor_2.reverse(255);
   // motor_3.reverse(255);
 
