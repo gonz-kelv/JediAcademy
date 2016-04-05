@@ -81,6 +81,7 @@
        posX = Math.min(x, limitX);
        posY = Math.min(y, limitY);
     var playingEnding = true;
+    var playingBattle = true;
     var camera, scene, renderer;
     var raycaster, intersects, INTERSECTED;
     var effect, controls;
@@ -148,7 +149,7 @@
       controls.noPan = true;
       
         sound3 = new THREE.PositionalAudio( listener );
-        sound3.load( 'audio/battle.mp3' );
+        sound3.load( 'audio/intro.mp3' );
         sound3.setRefDistance( 20 );
         sound3.setVolume(1);
         sound3.autoplay = true;
@@ -604,7 +605,15 @@
         */
         
         // floorMesh.position.x -= .1;
-        
+        if(playingBattle) {
+          var sound6 = new THREE.PositionalAudio( listener );
+                sound6.load( 'audio/battle.mp3' );
+                sound6.setRefDistance( 20 );
+                sound6.setVolume(1);
+                sound6.autoplay = true;
+                lightSaber.add( sound6 );
+          playingBattle = false;
+        }
          if(blocked1 == false ){laser.position.x-=.3;}else{
                laser.position.x+=.3;}
          if(blocked2 == false ){laser2.position.x-=.3;}else{
