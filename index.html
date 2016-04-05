@@ -30,19 +30,93 @@
     <script src="js/renderers/CanvasRenderer.js"></script>
     <script src="js/libs/stats.min.js"></script>
     <script src="js/libs/tween.min.js"></script>
-
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
   <script>
+    
+    // Values from the accelerometer
+      var x;
+      var y;
+      var z;
+      var pitch;
+      var roll;
+      var inclination;
+      var orientation;
+      var acceleration;
+
+      // Mapped values from accelerometer
+      var posX;
+      var posY;
+      
+          var playingEnding = true;
+    var playingBattle = true;
+      
+      // Screen values for better mapping
+      var limitX = window.innerWidth;
+      var limitY = window.innerHeight;
+      var widthCenter = window.innerWidth/2;
+      var heightCenter = window.innerHeight/2;
+      
+      // Other variables
+      var follower; // css tag
+      var socket; // Comomunication with the server
+      var col = false;
+      // Start server
+      socket = io('http://localhost:8000');
+      socket.on('jedy', function (data) {
+          
+          // Get values from the accelerometer
+          x = (data.x);// * 100) + widthCenter;
+          y = data.y;// * 100;
+          z = data.z;
+          pitch = data.pitch;
+          roll = data.roll;
+          inclination = data.inclination;
+          orientation = data.orientation;
+          acceleration = data.acceleration;
+          
+          // Set limitation for the movement of the lightsabes
+        posX = Math.min(x, limitX);
+        posY = Math.min(y, limitY);
+        //console.log(posX);
+      });
+
+       posX = Math.min(x, limitX);
+       posY = Math.min(y, limitY);
+    
     var camera, scene, renderer;
     var raycaster, intersects, INTERSECTED;
     var effect, controls;
     var element, container;
     var floorMesh;
    
+    var listener;
+    var audioContext = new AudioContext(),
+        src, 
+        source,
+        fft,
+        buffer,
+        data = new Uint8Array(),
+        boost = 0,
+        samples = 512;
+   
+   // evaluation
+   var lightPoints, darkPoints;
+   var deflects_counter = 0, kills_counter = 0;
     var lightSaber, lsMaterial, lsMesh;   
     var boxButton, bButtons = [];
     
-    var stArmy = [], stormTrooper, stMaterial, stMesh, laser,stPosX = 50, stPosY, stPosZ;
-
+    var stArmy = [], stormTrooper, stMaterial, stMesh, laser,stPosX = 50, stPosY, stPosZ,laser2,laser3,laser4;
+    
+    var blocked1 = false, blocked2 = false, blocked3 = false, blocked4 = false;
+    var blockedA = false, blockedB = false, blockedC = false, blockedD = false;
+    
+    var Yoda, YMaterial, YGeometry,YTexture; 
+    var Luke, LMaterial, LGeometry, LTexture;
+    var Emperor, EMaterial, EGeometry, ETexture;
+    var DarthVader, DVMaterial, DVGeometry, DVTexture;
+    
+    
     var clock = new THREE.Clock();
     
     var rSwing = false, highlighted = false, simulate = false, simulating = false;
@@ -51,19 +125,20 @@
     animate();
 
     function init() {
-      renderer = new THREE.WebGLRenderer();
+      renderer = new THREE.WebGLRenderer({antialias:true});
       element = renderer.domElement;
       container = document.getElementById('JediSimulator');
       container.appendChild(element);
-
-    //   effect = new THREE.StereoEffect(renderer); // This makes two sreens of the renderer
 
       scene = new THREE.Scene();
 
       camera = new THREE.PerspectiveCamera(90, 1, 0.001, 700);
       camera.position.set(0, 20, 0);
       scene.add(camera);
-
+      
+      listener = new THREE.AudioListener();
+      camera.add(listener);
+      
       controls = new THREE.OrbitControls(camera, element);
       controls.rotateUp(Math.PI/36);
       controls.target.set(
@@ -74,12 +149,17 @@
       controls.noZoom = true;
       controls.noPan = true;
       
+      var sound3 = new THREE.PositionalAudio( listener );
+        sound3.load( 'audio/battle.mp3' );
+        sound3.setRefDistance( 20 );
+        sound3.setVolume(1);
+        sound3.autoplay = true;
+        scene.add( sound3 );
 
     var radius   = 10,
     segments = 64,
     material = new THREE.LineBasicMaterial( { color: 0x0000ff } ),
     geometry = new THREE.CircleGeometry( radius, segments );
-
 
     // create a box button
    var geometryBox = new THREE.BoxGeometry( 5, 5, 15 );
@@ -108,15 +188,11 @@
       }
       window.addEventListener('deviceorientation', setOrientationControls, true);
 
-      var light = new THREE.HemisphereLight(0xffffbb, 0x080820, 1 );
+      var light = new THREE.HemisphereLight(0xffffbb, 0x080820, 2 );
       scene.add(light);
 
-      var texture = THREE.ImageUtils.loadTexture(
-        'img/spaceshiptexture1.png'
-      );
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      texture.anisotropy = renderer.getMaxAnisotropy();
+      var texture = new THREE.TextureLoader().load('img/spaceshiptexture1.png');
+      
 
       var material = new THREE.MeshPhongMaterial({
         color: 0xffffff,
@@ -124,13 +200,31 @@
         shininess: 20,
         map: texture
       });
+      
+      var newtexture = new THREE.TextureLoader().load('img/hall1.jpg');
 
+      var newmaterial = new THREE.MeshPhongMaterial({
+       
+        map: newtexture
+      });
+      
+      var spaceshipPlane = new THREE.PlaneGeometry(2000,1000);
+      spaceship = new THREE.Mesh(spaceshipPlane, newmaterial);
+      spaceship.position.x = 400;
+      spaceship.rotation.y = -Math.PI/2;
+      spaceship.position.y = -50;
+      scene.add(spaceship);
+      
+      
       var geometry = new THREE.PlaneGeometry(3000, 2000);
 
       floorMesh = new THREE.Mesh(geometry, material);
       floorMesh.rotation.x = -Math.PI / 2;
+      floorMesh.position.y = -10;
       floorMesh.name = 'Floor';
-      scene.add(floorMesh);
+    //   scene.add(floorMesh);
+      
+      // Create the environment here like walls
       
       // Storm Trooper
       var stGeometry = new THREE.PlaneGeometry(30,50);
@@ -138,7 +232,7 @@
       // Textures
       var stTexture = new THREE.TextureLoader().load('img/Stormtrooper_withgun2.png');
       var stTexture2 = new THREE.TextureLoader().load('img/Stormtrooper_notaiming2.png');
-      var stTexture3 = new THREE.TextureLoader().load('img/Stormtrooper_notaiming1100x39.png');
+      var stTexture3 = new THREE.TextureLoader().load('img/Stormtrooper_notaiming1.png');
       
       // Randomly assign materials with this array
       var stMaterialArray = [];
@@ -160,134 +254,174 @@
         transparent: true
       });
       stMaterialArray.push(stMaterial3);
-      
-      var counter1=1, counter2=1, counter3=1;
-      
-      for(var k=0; k<10;k++){
-        
-          if(k==0 || k==5){
-              if(counter1==2){
-                  stMesh = new THREE.Mesh(stGeometry, stMaterial3);
-                  stMesh.rotation.y = -120;
-                  stMesh.position.set(300,20,-30);
-                  scene.add(stMesh);
-                    stArmy.push(stMesh);
-              }
-              stMesh = new THREE.Mesh(stGeometry, stMaterial3);
-              stMesh.rotation.y = 180;
-              stMesh.position.set(50,20,30);
-              scene.add(stMesh);
-                    stArmy.push(stMesh);
-              counter1++;
-              
-          }
-          else if(k== 1 || k == 3 || k== 4||k ==8){
-              
-              
-              if(counter2==2){
-                  stMesh = new THREE.Mesh(stGeometry, stMaterial2);
-                    stMesh.rotation.y = -120;
-                    stMesh.position.set(150,20,-30);
-                    scene.add(stMesh);
-                    stArmy.push(stMesh);
-                    counter2++;
-              }
-              else if(counter2==3){
-                   stMesh = new THREE.Mesh(stGeometry, stMaterial2);
-                    stMesh.rotation.y = 180;
-                    stMesh.position.set(200,20,30);
-                    scene.add(stMesh);
-                    stArmy.push(stMesh);
-                    counter2++;
-              }
-              else if(counter2==4){
-                   stMesh = new THREE.Mesh(stGeometry, stMaterial2);
-                    stMesh.rotation.y = 180;
-                    stMesh.position.set(450,20,30);
-                    scene.add(stMesh);
-                    stArmy.push(stMesh);
-                    counter2++;
-              }
-              else{
-                stMesh = new THREE.Mesh(stGeometry, stMaterial2);
-                stMesh.rotation.y = -120;
-                stMesh.position.set(100,20,-30);
-                scene.add(stMesh);
-                    stArmy.push(stMesh);
-                counter2++;
-              }
-              
-              
-              
-              
-              
-          }
-          else{
 
-              if(counter3==2){
-                stMesh = new THREE.Mesh(stGeometry, stMaterial);
-                stMesh.rotation.y = 180;
-                stMesh.position.set(350,20,30);
-                scene.add(stMesh);
-                
-                    stArmy.push(stMesh);
-                console.log('huh1');
-                counter3++;
-              }
-              else if(counter3==3){
-                stMesh = new THREE.Mesh(stGeometry, stMaterial);
-                stMesh.rotation.y = -120;
-                stMesh.position.set(400,20,-30);
-                scene.add(stMesh);
-                
-                    stArmy.push(stMesh);
-                console.log('huh2');
-                counter3++;
-              }
-              else if(counter3==4){
-                stMesh = new THREE.Mesh(stGeometry, stMaterial);
-                stMesh.rotation.y = -120;
-                stMesh.position.set(500,20,-30);
-                scene.add(stMesh);
-                
-                    stArmy.push(stMesh);
-                console.log('huh3');
-                counter3++;
-              }
-              else{
-                stMesh = new THREE.Mesh(stGeometry, stMaterial);
-                stMesh.rotation.y = 180;
-                stMesh.position.set(150,20,30);
-                scene.add(stMesh);
-                    stArmy.push(stMesh);
-                console.log('huh');
-                counter3++;
-              }
+        stMesh = new THREE.Mesh(stGeometry, stMaterial3);
+        stMesh.rotation.y = -120;
+        stMesh.position.set(350,20,-30);
+        scene.add(stMesh);
+        stArmy.push(stMesh);
+             
+        stMesh = new THREE.Mesh(stGeometry, stMaterial3);
+        stMesh.rotation.y = 180;
+        stMesh.position.set(100,20,30);
+        scene.add(stMesh);
+        stArmy.push(stMesh);
+       
+        stMesh = new THREE.Mesh(stGeometry, stMaterial2);
+        stMesh.rotation.y = -120;
+        stMesh.position.set(250,20,-30);
+        scene.add(stMesh);
+        stArmy.push(stMesh);
+            
+        stMesh = new THREE.Mesh(stGeometry, stMaterial2);
+        stMesh.rotation.y = 180;
+        stMesh.position.set(300,20,30);
+        scene.add(stMesh);
+        stArmy.push(stMesh);
               
-          }
-      
-      
-      }
-               
+        stMesh = new THREE.Mesh(stGeometry, stMaterial2);
+        stMesh.rotation.y = 180;
+        stMesh.position.set(500,20,30);
+        scene.add(stMesh);
+        stArmy.push(stMesh);
+        
+        stMesh = new THREE.Mesh(stGeometry, stMaterial2);
+        stMesh.rotation.y = -120;
+        stMesh.position.set(150,20,-30);
+        scene.add(stMesh);
+        stArmy.push(stMesh);
+    
+        stMesh = new THREE.Mesh(stGeometry, stMaterial);
+        stMesh.rotation.y = 180;
+        stMesh.position.set(400,20,30);
+        scene.add(stMesh);
+        
+        stArmy.push(stMesh);
+        stMesh = new THREE.Mesh(stGeometry, stMaterial);
+        stMesh.rotation.y = -120;
+        stMesh.position.set(450,20,-30);
+        scene.add(stMesh);
+        stArmy.push(stMesh);
+        
+        stMesh = new THREE.Mesh(stGeometry, stMaterial);
+        stMesh.rotation.y = -120;
+        stMesh.position.set(550,20,-30);
+        scene.add(stMesh);
+        stArmy.push(stMesh);
+        
+        stMesh = new THREE.Mesh(stGeometry, stMaterial);
+        stMesh.rotation.y = 180;
+        stMesh.position.set(200,20,30);
+        scene.add(stMesh);
+        stArmy.push(stMesh);
+             
       // create lasers
       var geometry = new THREE.BoxGeometry( 6,1,1 );
       var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
       laser = new THREE.Mesh( geometry, material );
       laser.rotation.y = -Math.PI/6;
       laser.rotation.x = -Math.PI/4;
-      laser.position.set(150,35,25);
+      laser.position.set(212,39,32);
       scene.add(laser);
-      laser2 = new THREE.Mesh( geometry, material );
-      laser2.position.set(350,35,25);
+      laser2 = new THREE.Mesh(geometry, material );
+      laser2.rotation.y = -Math.PI/6;
+      laser2.rotation.x = -Math.PI/4;
+      laser2.position.set(412,40,33);
       scene.add(laser2);
+      laser3 = new THREE.Mesh( geometry, material );
+      laser3.position.set(456,37,-34);
+      laser3.rotation.y = Math.PI/6;
+      laser3.rotation.x = Math.PI/4;
+      scene.add(laser3);
+      laser4 = new THREE.Mesh( geometry, material );
+      laser4.position.set(558,37,-36);
+      laser4.rotation.y = Math.PI/10;
+      laser4.rotation.x = Math.PI/4;
+      scene.add(laser4);
       
+       var lsMaterial = new THREE.MeshPhongMaterial({
+        color: 0x0000ff,
+        specular: 0xff0000,
+        shininess: 100
+      });
+      var glowMaterial = new THREE.MeshLambertMaterial({
+        color: 0x0000ff,
+        specular: 0xff0000,
+        shininess: 10,
+        transparent: true,
+        opacity: 0.1
+      });
+      var glowMaterial2 = new THREE.MeshLambertMaterial({
+        color: 0x0000ff,
+        specular: 0xff0000,
+        shininess: 10,
+        transparent: true,
+        opacity: 0.3
+      });
       
       // lightSaber
-      var geometry = new THREE.BoxGeometry( 1,15,1 );
-      var material = new THREE.MeshBasicMaterial( {color: 'blue'} );
-      lightSaber = new THREE.Mesh( geometry, material );
-      lightSaber.position.set(10,10,0);
+      var geometry = new THREE.CylinderGeometry( 0.5, 0.5, 20, 15 );
+      lightSaber = new THREE.Mesh( geometry, lsMaterial );
+      lightSaber.position.set(10,15,0);
       scene.add(lightSaber);
+      
+      
+      var glowGeometry2 = new THREE.CylinderGeometry( 1, 1, 20, 15 );
+      glowLightSaber2 = new THREE.Mesh( glowGeometry2, glowMaterial2 );
+      glowLightSaber2.position.set(10,15,0);
+      scene.add(glowLightSaber2);
+      
+       var sound1 = new THREE.PositionalAudio( listener );
+        sound1.load( 'audio/lightsaber.mp3' );
+        sound1.setRefDistance( 20 );
+        sound1.setVolume(5);
+        sound1.autoplay = true;
+        sound1.setLoop(true);
+        lightSaber.add( sound1 );
+      
+      // Yoda
+      YGeometry = new THREE.PlaneGeometry(30,30);
+      YTexture = new THREE.TextureLoader().load('img/yoda.png');
+      YMaterial = new THREE.MeshPhongMaterial({
+        map: YTexture,
+        transparent: true
+      });
+      Yoda = new THREE.Mesh(YGeometry, YMaterial);
+      Yoda.position.set(50,20,-15);
+      Yoda.rotation.y = -120;
+      
+      // Luke SkyWalker
+      LGeometry = new THREE.PlaneGeometry(30,50);
+      LTexture = new THREE.TextureLoader().load('img/luke_skywalker1.png');
+      LMaterial = new THREE.MeshPhongMaterial({
+        map: LTexture,
+        transparent: true
+      });
+      Luke = new THREE.Mesh(LGeometry, LMaterial);
+      Luke.position.set(50,20,30);
+      Luke.rotation.y = 180;
+      
+      // Emperor
+      EGeometry = new THREE.PlaneGeometry(30,50);
+      ETexture = new THREE.TextureLoader().load('img/darth_sidious3.png');
+      EMaterial = new THREE.MeshPhongMaterial({
+        map: ETexture,
+        transparent: true
+      });
+      Emperor = new THREE.Mesh(EGeometry, EMaterial);
+      Emperor.position.set(50,20,15);
+      Emperor.rotation.y = 180;
+        
+      // Darth Vader
+      DVGeometry = new THREE.PlaneGeometry(30,50);
+      DVTexture = new THREE.TextureLoader().load('img/darth_vader1.png');
+      DVMaterial = new THREE.MeshPhongMaterial({
+        map: DVTexture,
+        transparent: true
+      });
+      DarthVader = new THREE.Mesh(DVGeometry, DVMaterial);
+      DarthVader.position.set(50,20,30);
+      DarthVader.rotation.y = 180;
         
       window.addEventListener('resize', resize, false);
       setTimeout(resize, 1);
@@ -305,9 +439,7 @@
       camera.updateProjectionMatrix();
 
       renderer.setSize(width, height);
-    //   effect.setSize(width, height);
-      
-      
+     
     }
 
     function update(dt) {
@@ -317,11 +449,15 @@
       
       controls.update(dt);
       
-      // Do lightSaber rotation here
-    //   lightSaber.rotation.x +=1;
+      // Make glowsaber to follow the lightsaber
+      glowLightSaber2.position.x = lightSaber.position.x;
+      glowLightSaber2.position.y = lightSaber.position.y;
+      glowLightSaber2.position.z = lightSaber.position.z;
+      glowLightSaber2.rotation.x = lightSaber.rotation.x;
+      glowLightSaber2.rotation.y = lightSaber.rotation.y;
+      glowLightSaber2.rotation.z = lightSaber.rotation.z;
       
       if(highlighted == true && rSwing == true){
-          console.log('uhuh');
           scene.remove(boxButton);
           simulate = true; 
         }
@@ -330,16 +466,67 @@
       if(simulate){
           simulator();   
       }
-      if(simulating){
-        //   fire();
-          
-      }
+       
+       var fXg = 0, fYg = 0, fZg = 0, Xg, Yg, Zg;
+       var alpha = .5;
+ 
+    // //Low Pass Filter
+    fXg = x * alpha + (fXg * (1.0 - alpha));
+    fYg = y * alpha + (fYg * (1.0 - alpha));
+    fZg = z * alpha + (fZg * (1.0 - alpha));
+  
+    //Roll & Pitch Equations
+    // roll  = (Math.atan2(-fYg, fZg)*180.0)/Math.PI;
+    // pitch = (Math.atan2(fXg, Math.sqrt(fYg*fYg + fZg*fZg))*180.0)/Math.PI;
+      //x *= -1;
+
+        // console.log(pitch + " " + roll);
+        lightSaber.rotation.y = 0;
+        lightSaber.rotation.x = x; //((pitch/90) * -1);
+        lightSaber.rotation.z = (roll/100);
+       
+       
       
+      // Lasers arguments
+       if(stArmy[2].position.x <=160 && blocked1 == false){
+          laser.position.z-=.23;
+          laser.position.x-=.6;
+          laser.position.y-=.15;
+        }
+        if(stArmy[6].position.x <=100 && blocked2 == false){
+          laser2.position.z-=.25;
+          laser2.position.x-=.6;
+          laser2.position.y-=.15;
+        }
+        if(stArmy[7].position.x <=100 && blocked3 == false){
+            laser3.position.z+=.3;
+            laser3.position.x-=.6;
+            laser3.position.y-=.15;
+        }
+        if(stArmy[8].position.x <=100 && blocked4 == false){
+            laser4.position.z+=.3;
+            laser4.position.x-=.6;
+            laser4.position.y-=.15;
+        }
+        if(stArmy[9].position.x <=-400){
+            scene.add(Yoda);
+            scene.add(DarthVader);
+        }
+        
+        for(var w = 0; w < 10; w++){
+            if(stArmy[w].position.x <= 80 && acceleration > 3 ){
+                scene.remove(stArmy[w]);
+                kills_counter++;
+            }
+            
+        }
+        
       
     }
 
     function render(dt) {
       renderer.render(scene, camera);
+      
       raycaster = new THREE.Raycaster();
       raycaster.set(camera.getWorldPosition(), camera.getWorldDirection() );
     
@@ -364,8 +551,6 @@
 
                 }
     
-                
-
     }
     
   
@@ -403,13 +588,13 @@
         
         switch ( event.button ) {
         case 0: // left 
-            console.log('huh1');
+            // console.log('huh1');
             break;
         case 1: // middle
-            console.log('what');
+            // console.log('what');
             break;
         case 2: // right
-            console.log('huh');
+            // console.log('huh');
             // lightSaber
             // lightSaber.rotation.x +=1;
             rSwing = true;
@@ -427,31 +612,175 @@
             - track results        
         */
         
-        floorMesh.position.x -= .1;
+        // floorMesh.position.x -= .1;
+        if(playingBattle) {
+          var sound6 = new THREE.PositionalAudio( listener );
+                sound6.load( 'audio/battle.mp3' );
+                sound6.setRefDistance( 20 );
+                sound6.setVolume(1);
+                sound6.autoplay = true;
+                lightSaber.add( sound6 );
+          playingBattle = false;
+        }
+         if(blocked1 == false ){laser.position.x-=.3;}else{
+               laser.position.x+=1;}
+         if(blocked2 == false ){laser2.position.x-=.3;}else{
+               laser2.position.x+=1;}
+         if(blocked3 == false ){laser3.position.x-=.3;}else{
+               laser3.position.x+=1;}
+         if(blocked4 == false ){laser4.position.x-=.3;}else{
+               laser4.position.x+=1;}
+       
         
-        scene.add(stMesh);
-        laser.position.x-=.3;
-        laser2.position.x-=.3;
         
         
         for(var a = 0 ; a<10;a++){
-            // console.log(stArmy[a].position.x);
             stArmy[a].position.x -=.3;
         }
-        scene.add( laser );
-        stMesh.position.x-=.1;
+        
+    //     // Collisions
+       var intersectSTArmy =[];
+       var collisionsST = [];
+      
+       
+       var lCollision, lCollision2;
+       var intersectLightSaber = new THREE.Box3().setFromObject(lightSaber);
+       var intersectLaser = new THREE.Box3().setFromObject(laser);
+       var intersectLaser2 = new THREE.Box3().setFromObject(laser2);
+       var intersectLaser3 = new THREE.Box3().setFromObject(laser3);
+       var intersectLaser4 = new THREE.Box3().setFromObject(laser4);
+      
+       var laserCollisionChecks = [];
+       laserCollisionChecks.push(intersectLaser);
+       laserCollisionChecks.push(intersectLaser2);
+       laserCollisionChecks.push(intersectLaser3);
+       laserCollisionChecks.push(intersectLaser4);
+       
+      
+      
+    //   // This will be looping the sectors
+       for(var s = 0; s < 10; s++) {
+          intersectSTArmy[s] = new THREE.Box3().setFromObject(stArmy[s]);
+        }
+       for(var t = 0; t < 4; t++) {
+          tempVar = laserCollisionChecks[t];
+          lCollision = tempVar.intersectsBox(intersectLightSaber);
+           if(lCollision == true){
+                col = true;
+                var sound2 = new THREE.PositionalAudio( listener );
+                sound2.load( 'audio/deflect.mp3' );
+                sound2.setRefDistance( 20 );
+                sound2.setVolume(2);
+                sound2.autoplay = true;
+                lightSaber.add( sound2 );
+                socket.emit('deflect', true); // Send information to server
+                deflects_counter++;
+           }
+           
+           if( lCollision == true && t == 0){
+               blocked1 = true;
+               deflects_counter++;
+           }
+           else if(lCollision == true && t==1){
+               blocked2 = true;
+               deflects_counter++;
+           }
+           else if(lCollision == true && t==2){
+               blocked3 = true;
+               deflects_counter++;
+           }
+           else if(lCollision == true && t==3){
+               blocked4 =true;
+               deflects_counter++;
+           }
+           
+        }
+        
+      
+        
+               
         // This will update objects that are created during in the simulation
         simulating = true;
         
     }
     
-    function fire(){
+    function endSimulate(){
+      sound3.stop();
+      sound1.stop();
+      var sound4 = new THREE.PositionalAudio( listener );
+      var sound5 = new THREE.PositionalAudio( listener );
+      if(deflects_counter <= 2 && kills_counter <= 4) {
+        if(playingEnding) {
+          sound5.load( 'audio/jedi.mp3' );
+          sound5.setRefDistance( 20 );
+          sound5.setVolume(1);
+          sound5.autoplay = true;
+          scene.add( sound5 );
+
+          sound4.load( 'audio/padawan.mp3' );
+          sound4.setRefDistance( 20 );
+          sound4.setVolume(5);
+          sound4.autoplay = true;
+          scene.add( sound4 );
+          
+          playingEnding = false;
+        }
+        scene.add(Yoda);
+
+      } else if(deflects_counter >= 3 && kills_counter <= 4) {
+        if(playingEnding) {
+          sound5.load( 'audio/jedi.mp3' );
+          sound5.setRefDistance( 20 );
+          sound5.setVolume(1);
+          sound5.autoplay = true;
+          scene.add( sound5 );
+
+          sound4.load( 'audio/jedi_master.mp3' );
+          sound4.setRefDistance( 20 );
+          sound4.setVolume(5);
+          sound4.autoplay = true;
+          scene.add( sound4 );
+          playingEnding = false;
+        }
+        scene.add( Yoda );
+
+     } else if(deflects_counter <= 2 && kills_counter >= 5) {
+        if(playingEnding) {
+          sound5.load( 'audio/sith.mp3' );
+          sound5.setRefDistance( 20 );
+          sound5.setVolume(1);
+          sound5.autoplay = true;
+          scene.add( sound5 );
+
+          sound4.load( 'audio/sith_apprentice.mp3' );
+          sound4.setRefDistance( 20 );
+          sound4.setVolume(5);
+          sound4.autoplay = true;
+          scene.add( sound4 );
+          playingEnding = false;
+        }
+        scene.add(DarthVader);
+
+     } else if(deflects_counter >= 3 && kills_counter >= 5) {
+        if(playingEnding) {
+          sound5.load( 'audio/sith.mp3' );
+          sound5.setRefDistance( 20 );
+          sound5.setVolume(1);
+          sound5.autoplay = true;
+          scene.add( sound5 );
+
+          sound4.load( 'audio/sith_lord.mp3' );
+          sound4.setRefDistance( 20 );
+          sound4.setVolume(5);
+          sound4.autoplay = true;
+          scene.add( sound4 );
+          playingEnding = false;
+        }
+        scene.add(DarthVader);
+     }
+       // check the deflects
        
-          laser.position.z-=.25;
-          laser.position.x-=.5;
-          laser.position.y-=.2;
-          console.log(laser.position.x);
-           
+       // This is the evaluation page
     }
     
   </script>
